@@ -3,7 +3,7 @@ This is a group final AI project on the Max Flow Problem using Genetic Algorithm
 
 ------------------------
 ## How do I run this program?
-First you need to install Python. Then, you need to download these three files:
+First you need to install Python. Then, you need to download these three files in Code:
 * Individual.py
 * algorithms.py
 * main.py
