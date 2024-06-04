@@ -20,5 +20,5 @@ Finally, you can now run the program by running main.py. You can run this in any
 ### Our Contributors:
 Trịnh Ngọc Các\
 Đỗ Thị Mỹ Khánh\
-Nguyễn Thảo Nguyên\
+Trần Nguyễn Thảo Nguyên\
 Nguyễn Vân Phi Yến
