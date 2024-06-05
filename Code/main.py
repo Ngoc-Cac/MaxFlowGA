@@ -764,10 +764,10 @@ removeEdgeButt = tk.Button(edit_fm2, text="Remove Edge",width=12,font=('SVN-Goth
 clearGraphButt = tk.Button(edit_fm2, text="Clear", width=12, font=('SVN Gotham Medium', 10), bg='#f4a261',fg='black',
                         command=lambda: ClearGraph(main_frame2))
 
-addEdgeButt.grid(row=0, column=2, padx=5, pady=5)
-addVertexButt.grid(row=1, column=2, padx=5, pady=5)
-removeVertexButt.grid(row=1, column=3, padx=5, pady=5)
-removeEdgeButt.grid(row=0, column=3, padx=5, pady=5)
+addVertexButt.grid(row=0, column=2, padx=5, pady=5)
+addEdgeButt.grid(row=1, column=2, padx=5, pady=5)
+removeVertexButt.grid(row=0, column=3, padx=5, pady=5)
+removeEdgeButt.grid(row=1, column=3, padx=5, pady=5)
 clearGraphButt.grid(row=0, column=4, padx=5, pady=5)
 
 show_frame1()
