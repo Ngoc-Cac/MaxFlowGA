@@ -571,7 +571,7 @@ def LoadSave(entryWidget: tk.Entry, master: tk.Misc = root) -> None:
             try:
                 char = int(char)
                 if char < 0:
-                    raise ValueError
+                    raise ValueError()
             except ValueError:
                 ErrorPopUp(master, "Could not read savefile\nPlease check save file for wrong syntax/types/values.")
                 return
