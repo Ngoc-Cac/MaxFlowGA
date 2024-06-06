@@ -433,7 +433,7 @@ def SaveGraph(entryWidget: tk.Entry, master: tk.Misc = root) -> None:
     try:
         savefile = open(os.path.join(dirname, f'{filename}.csv'), mode='w', newline='')
     except OSError:
-        ErrorPopUp(master, f"Could not create savefile with name {filename}\nPlease try a different name.")
+        ErrorPopUp(master, f"Could not create save file with name {filename}\nPlease try a different name.")
         return
     saver = csv.writer(savefile)
     saver.writerow([f'({coords[0]},{coords[1]})' for coords in main_nodes_pos.values()])
