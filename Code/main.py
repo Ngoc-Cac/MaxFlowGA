@@ -429,7 +429,7 @@ def SaveGraph(entryWidget: tk.Entry, master: tk.Misc = root) -> None:
     filename = entryWidget.get()
     dirname = os.path.dirname(__file__)
     if not os.path.exists((dirname := os.path.join(dirname, 'Saves'))):
-        os.makedirs(filename)
+        os.makedirs('Saves')
     try:
         savefile = open(os.path.join(dirname, f'{filename}.csv'), mode='w', newline='')
     except OSError:
