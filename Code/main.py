@@ -6,9 +6,7 @@ if (MYSYSTEM := platform.system()) == 'Darwin':
     try:
         from tkmacosx import Button
     except ImportError:
-        if MYSYSTEM != 'Darwin':
-            pass
-        else:
+        if MYSYSTEM == 'Darwin':
             raise ImportError("You need to install tkmacosx to run this program...")
 else:
     Button = tk.Button
