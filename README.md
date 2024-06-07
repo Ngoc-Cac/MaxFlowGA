@@ -11,10 +11,7 @@ Maximum Flow Problem is a problem involving finding flows through a network whic
 ## How do I run this program?
 For Windows and Linux: It's easy! Just download the directory named 'Program' and run the main.exe file inside the directory.<br>
 For MacOS: please view the instructions below.
-
-------------------------
 ### Help! I can't run main.exe?!!
-------------------------
 If you cannot run main.exe. You can instead run the source code provided in the Code directory. Please follow these steps:<br><br>
 1. First you need to install Python if you do not have Python installed on your computer.
 2. Then, you need to download these three files in Code:
