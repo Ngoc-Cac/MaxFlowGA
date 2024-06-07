@@ -3,7 +3,13 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk, networkx as nx, algorithms as alg, os, csv, platform
 
 if (MYSYSTEM := platform.system()) == 'Darwin':
-    from tkmacosx import Button
+    try:
+        from tkmacosx import Button
+    except ImportError:
+        if MYSYSTEM != 'Darwin':
+            pass
+        else:
+            raise ImportError("You need to install tkmacosx to run this program...")
 else:
     Button = tk.Button
 
