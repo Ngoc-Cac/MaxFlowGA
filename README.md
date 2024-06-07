@@ -12,13 +12,15 @@ You also need to download these Python libraries:
 * tkinter
 * matplotlib
 * networkx
+* tkmacosx (MacOS users need to install this library)
 
-Finally, you can now run the program by running main.py. You can run this in any IDE/code editor that supports Python.
+Finally, you can now run the program by running main.py. You can run this in any IDE/code editor that supports Python.<br>
+Note that some features may not work properly on MacOS!
 
 ------------------------
 
 ### Our Contributors:
-Trịnh Ngọc Các\
-Đỗ Thị Mỹ Khánh\
-Trần Nguyễn Thảo Nguyên\
-Nguyễn Vân Phi Yến
+Trịnh Ngọc Các<br>
+Đỗ Thị Mỹ Khánh<br>
+Trần Nguyễn Thảo Nguyên<br>
+Nguyễn Vân Phi Yến<br>
