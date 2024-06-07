@@ -768,11 +768,11 @@ SetMutRateButt = Button(edit_fm1, text="Set Mutation Rate", width=_compute_width
                            command=lambda: SetMutRate(entry1))
 SetMaxGenButt = Button(edit_fm1, text="Set Max Generation", width=_compute_width(22, 10), font=('SFT Futura Medium', 10),
                            command=lambda: SetMaxGen(entry1))
-SetCrossFuncButt = Button(edit_fm1, text="Change Crossover Function", width=_compute_width(2, 10), font=('SFT Futura Medium', 10),
+SetCrossFuncButt = Button(edit_fm1, text="Change Crossover Function", width=_compute_width(22, 10), font=('SFT Futura Medium', 10),
                            command=lambda: SetCrossFunc())
-ToggleUpdateButt = Button(edit_fm1, text="Toggle Update: Off", width=_compute_width(15, 10), font=('SFT Futura Medium', 10))
+ToggleUpdateButt = Button(edit_fm1, text="Toggle Update: Off", width=_compute_width(17, 10), font=('SFT Futura Medium', 10))
 ToggleUpdateButt.config(command=lambda: ToggleUpdateProd(ToggleUpdateButt))
-PrematureStopButt = Button(edit_fm1, text="Premature Stop: On", width=_compute_width(15, 10), font=('SFT Futura Medium', 10),
+PrematureStopButt = Button(edit_fm1, text="Premature Stop: On", width=_compute_width(17, 10), font=('SFT Futura Medium', 10),
                               bg='#007200', fg='white')
 PrematureStopButt.config(command=lambda: PrematureStopProd(PrematureStopButt))
 LoadSaveButt = Button(edit_fm1, text="Load Save", width=_compute_width(15, 10), font=('SFT Futura Medium', 10),
