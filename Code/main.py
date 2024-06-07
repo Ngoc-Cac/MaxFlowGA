@@ -2,17 +2,20 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk, networkx as nx, algorithms as alg, os, csv, platform
 
-if platform.system() == 'Darwin':
+if (MYSYSTEM := platform.system()) == 'Darwin':
     from tkmacosx import Button
 else:
     Button = tk.Button
 # import logging as lg
 
+def _compute_width(letters: int, font_size: int) -> int:
+    return int(letters * font_size * 2/3) if MYSYSTEM == 'Darwin' else letters
+
 class ErrorPopUp(tk.Toplevel):
     def __init__(self, master: tk.Misc, message):
         tk.Toplevel.__init__(self, master)
         error_message = tk.Label(self, text=message)
-        OkButt = Button(self, text="Ok", width=10, command=self.destroy)
+        OkButt = Button(self, text="Ok", command=self.destroy)
         error_message.pack()
         OkButt.pack()
         self.geometry(f"300x80+300+200")
@@ -673,7 +676,7 @@ home = Button(root, text='Home', bg='#064789', fg='white', font=('SVN-Gotham Bol
 edit_graph = Button(root, text='Edit Graph', bg='#427aa1', fg='white', font=('SVN-Gotham Bold', 13),
                     command=show_frame2)
 
-instruc_btn.grid(column=0, row=0, sticky=tNS,
+instruc_btn.grid(column=0, row=0, sticky=tk.NS,
                  padx=2, pady=2,
                  ipadx=10, ipady=1)
 home.grid(row=0, column=1, sticky=tk.NS,
@@ -755,24 +758,24 @@ entry1 = tk.Entry(edit_fm1, width=17)
 entry1.grid(row=0, column=1, padx=5, pady=5)
 
 # Button (Edit frame 1)
-runFordFulkButt = Button(edit_fm1, text="Ford Fulkerson", width=15,font=('SVN-Gotham Medium', 10),
+runFordFulkButt = Button(edit_fm1, text="Ford Fulkerson", width=_compute_width(15, 10), font=('SVN-Gotham Medium', 10),
                             command=lambda: RunFordFulkerson(main_frame1))
-runGenAlgButt = Button(edit_fm1, text="Genetic Algorithm", width=15,font=('SVN-Gotham Medium', 10),
+runGenAlgButt = Button(edit_fm1, text="Genetic Algorithm", width=_compute_width(15, 10), font=('SVN-Gotham Medium', 10),
                           command=lambda: RunGenAlg(main_frame1))
-SetPopSizeButt = Button(edit_fm1, text="Set Population Size", width=15, font=('SFT Futura Medium', 10),
+SetPopSizeButt = Button(edit_fm1, text="Set Population Size", width=_compute_width(15, 10), font=('SFT Futura Medium', 10),
                            command=lambda: SetPopSize(entry1))
-SetMutRateButt = Button(edit_fm1, text="Set Mutation Rate", width=15, font=('SFT Futura Medium', 10),
+SetMutRateButt = Button(edit_fm1, text="Set Mutation Rate", width=_compute_width(15, 10), font=('SFT Futura Medium', 10),
                            command=lambda: SetMutRate(entry1))
-SetMaxGenButt = Button(edit_fm1, text="Set Max Generation", width=20, font=('SFT Futura Medium', 10),
+SetMaxGenButt = Button(edit_fm1, text="Set Max Generation", width=_compute_width(22, 10), font=('SFT Futura Medium', 10),
                            command=lambda: SetMaxGen(entry1))
-SetCrossFuncButt = Button(edit_fm1, text="Change Crossover Function", width=20, font=('SFT Futura Medium', 10),
+SetCrossFuncButt = Button(edit_fm1, text="Change Crossover Function", width=_compute_width(2, 10), font=('SFT Futura Medium', 10),
                            command=lambda: SetCrossFunc())
-ToggleUpdateButt = Button(edit_fm1, text="Toggle Update: Off", width=15, font=('SFT Futura Medium', 10))
+ToggleUpdateButt = Button(edit_fm1, text="Toggle Update: Off", width=_compute_width(15, 10), font=('SFT Futura Medium', 10))
 ToggleUpdateButt.config(command=lambda: ToggleUpdateProd(ToggleUpdateButt))
-PrematureStopButt = Button(edit_fm1, text="Premature Stop: On", width=15, font=('SFT Futura Medium', 10),
+PrematureStopButt = Button(edit_fm1, text="Premature Stop: On", width=_compute_width(15, 10), font=('SFT Futura Medium', 10),
                               bg='#007200', fg='white')
 PrematureStopButt.config(command=lambda: PrematureStopProd(PrematureStopButt))
-LoadSaveButt = Button(edit_fm1, text="Load Save", width=15, font=('SFT Futura Medium', 10),
+LoadSaveButt = Button(edit_fm1, text="Load Save", width=_compute_width(15, 10), font=('SFT Futura Medium', 10),
                          command=lambda: LoadSave(entry1, main_frame1))
 
 runFordFulkButt.grid(row=0, column=2, padx=5, pady=5)
@@ -814,17 +817,17 @@ entry2 = tk.Entry(edit_fm2, width=50)
 entry2.grid(row=0, column=1, padx=5, pady=5)
 
 #Button (Edit Frame 2)
-addEdgeButt = Button(edit_fm2, text="Add Edge",width=12,font=('SVN-Gotham Medium', 10),
+addEdgeButt = Button(edit_fm2, text="Add Edge",width=_compute_width(12, 10), font=('SVN-Gotham Medium', 10),
                         command=lambda: AddEdgeInput(main_frame2, entry2))
-addVertexButt = Button(edit_fm2, text="Add Vertex",width=12,font=('SVN-Gotham Medium', 10),
+addVertexButt = Button(edit_fm2, text="Add Vertex",width=_compute_width(12, 10), font=('SVN-Gotham Medium', 10),
                           command=lambda: AddVertexInput(main_frame2, entry2))
-removeVertexButt = Button(edit_fm2, text="Remove Vertex",width=12,font=('SVN-Gotham Medium', 10),
+removeVertexButt = Button(edit_fm2, text="Remove Vertex",width=_compute_width(12, 10), font=('SVN-Gotham Medium', 10),
                             command=lambda: RemoveVertex(main_frame2, entry2))
-removeEdgeButt = Button(edit_fm2, text="Remove Edge",width=12,font=('SVN-Gotham Medium', 10),
+removeEdgeButt = Button(edit_fm2, text="Remove Edge",width=_compute_width(12, 10), font=('SVN-Gotham Medium', 10),
                            command=lambda: RemoveEdge(main_frame2, entry2))
-clearGraphButt = Button(edit_fm2, text="Clear", width=12, font=('SVN Gotham Medium', 10), bg='#f4a261',fg='black',
+clearGraphButt = Button(edit_fm2, text="Clear", width=_compute_width(12, 10), font=('SVN Gotham Medium', 10), bg='#f4a261',fg='black',
                         command=lambda: ClearGraph(main_frame2))
-saveGraphButt = Button(edit_fm2, text="Save Graph", width=12,font=('SVN Gotham Medium', 10), bg='#007200',fg='black',
+saveGraphButt = Button(edit_fm2, text="Save Graph", width=_compute_width(12, 10), font=('SVN Gotham Medium', 10), bg='#007200',fg='black',
                           command=lambda: SaveGraph(entry2))
 
 addVertexButt.grid(row=0, column=2, padx=5, pady=5)
