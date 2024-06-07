@@ -1,14 +1,18 @@
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import tkinter as tk, networkx as nx, algorithms as alg, os, csv
+import tkinter as tk, networkx as nx, algorithms as alg, os, csv, platform
 
+if platform.system() == 'Darwin':
+    from tkmacosx import Button
+else:
+    Button = tk.Button
 # import logging as lg
 
 class ErrorPopUp(tk.Toplevel):
     def __init__(self, master: tk.Misc, message):
         tk.Toplevel.__init__(self, master)
         error_message = tk.Label(self, text=message)
-        OkButt = tk.Button(self, text="Ok", width=10, command=self.destroy)
+        OkButt = Button(self, text="Ok", width=10, command=self.destroy)
         error_message.pack()
         OkButt.pack()
         self.geometry(f"300x80+300+200")
@@ -662,14 +666,14 @@ root.rowconfigure(2, weight=1)   # main frame
 root.rowconfigure(3, weight=0)   # edit frame
 
 # Create Buttons
-instruc_btn = tk.Button(root, text='?', bg='white', font=('Arial', 13),
+instruc_btn = Button(root, text='?', bg='white', font=('Arial', 13),
                         command=toggle_instruction_frame)
-home = tk.Button(root, text='Home', bg='#064789', fg='white', font=('SVN-Gotham Bold', 13),
+home = Button(root, text='Home', bg='#064789', fg='white', font=('SVN-Gotham Bold', 13),
                     command=show_frame1)
-edit_graph = tk.Button(root, text='Edit Graph', bg='#427aa1', fg='white', font=('SVN-Gotham Bold', 13),
+edit_graph = Button(root, text='Edit Graph', bg='#427aa1', fg='white', font=('SVN-Gotham Bold', 13),
                     command=show_frame2)
 
-instruc_btn.grid(column=0, row=0, sticky=tk.NS,
+instruc_btn.grid(column=0, row=0, sticky=tNS,
                  padx=2, pady=2,
                  ipadx=10, ipady=1)
 home.grid(row=0, column=1, sticky=tk.NS,
@@ -747,28 +751,28 @@ edit_fm1.grid_remove()
 edit_lbl = tk.Label(edit_fm1, text='Edit:', bg='lightgray',font=('SVN-Gotham', 10))
 edit_lbl.grid(row=0, column=0, padx=5, pady=5)
 #Entry 1
-entry1 = tk.Entry(edit_fm1, width=50)
+entry1 = tk.Entry(edit_fm1, width=17)
 entry1.grid(row=0, column=1, padx=5, pady=5)
 
 # Button (Edit frame 1)
-runFordFulkButt = tk.Button(edit_fm1, text="Ford Fulkerson", width=15,font=('SVN-Gotham Medium', 10),
+runFordFulkButt = Button(edit_fm1, text="Ford Fulkerson", width=15,font=('SVN-Gotham Medium', 10),
                             command=lambda: RunFordFulkerson(main_frame1))
-runGenAlgButt = tk.Button(edit_fm1, text="Genetic Algorithm", width=15,font=('SVN-Gotham Medium', 10),
+runGenAlgButt = Button(edit_fm1, text="Genetic Algorithm", width=15,font=('SVN-Gotham Medium', 10),
                           command=lambda: RunGenAlg(main_frame1))
-SetPopSizeButt = tk.Button(edit_fm1, text="Set Population Size", width=15, font=('SFT Futura Medium', 10),
+SetPopSizeButt = Button(edit_fm1, text="Set Population Size", width=15, font=('SFT Futura Medium', 10),
                            command=lambda: SetPopSize(entry1))
-SetMutRateButt = tk.Button(edit_fm1, text="Set Mutation Rate", width=15, font=('SFT Futura Medium', 10),
+SetMutRateButt = Button(edit_fm1, text="Set Mutation Rate", width=15, font=('SFT Futura Medium', 10),
                            command=lambda: SetMutRate(entry1))
-SetMaxGenButt = tk.Button(edit_fm1, text="Set Max Generation", width=22, font=('SFT Futura Medium', 10),
+SetMaxGenButt = Button(edit_fm1, text="Set Max Generation", width=20, font=('SFT Futura Medium', 10),
                            command=lambda: SetMaxGen(entry1))
-SetCrossFuncButt = tk.Button(edit_fm1, text="Change Crossover Function", width=22, font=('SFT Futura Medium', 10),
+SetCrossFuncButt = Button(edit_fm1, text="Change Crossover Function", width=20, font=('SFT Futura Medium', 10),
                            command=lambda: SetCrossFunc())
-ToggleUpdateButt = tk.Button(edit_fm1, text="Toggle Update: Off", width=15, font=('SFT Futura Medium', 10))
+ToggleUpdateButt = Button(edit_fm1, text="Toggle Update: Off", width=15, font=('SFT Futura Medium', 10))
 ToggleUpdateButt.config(command=lambda: ToggleUpdateProd(ToggleUpdateButt))
-PrematureStopButt = tk.Button(edit_fm1, text="Premature Stop: On", width=15, font=('SFT Futura Medium', 10),
+PrematureStopButt = Button(edit_fm1, text="Premature Stop: On", width=15, font=('SFT Futura Medium', 10),
                               bg='#007200', fg='white')
 PrematureStopButt.config(command=lambda: PrematureStopProd(PrematureStopButt))
-LoadSaveButt = tk.Button(edit_fm1, text="Load Save", width=15, font=('SFT Futura Medium', 10),
+LoadSaveButt = Button(edit_fm1, text="Load Save", width=15, font=('SFT Futura Medium', 10),
                          command=lambda: LoadSave(entry1, main_frame1))
 
 runFordFulkButt.grid(row=0, column=2, padx=5, pady=5)
@@ -810,17 +814,17 @@ entry2 = tk.Entry(edit_fm2, width=50)
 entry2.grid(row=0, column=1, padx=5, pady=5)
 
 #Button (Edit Frame 2)
-addEdgeButt = tk.Button(edit_fm2, text="Add Edge",width=12,font=('SVN-Gotham Medium', 10),
+addEdgeButt = Button(edit_fm2, text="Add Edge",width=12,font=('SVN-Gotham Medium', 10),
                         command=lambda: AddEdgeInput(main_frame2, entry2))
-addVertexButt = tk.Button(edit_fm2, text="Add Vertex",width=12,font=('SVN-Gotham Medium', 10),
+addVertexButt = Button(edit_fm2, text="Add Vertex",width=12,font=('SVN-Gotham Medium', 10),
                           command=lambda: AddVertexInput(main_frame2, entry2))
-removeVertexButt = tk.Button(edit_fm2, text="Remove Vertex",width=12,font=('SVN-Gotham Medium', 10),
+removeVertexButt = Button(edit_fm2, text="Remove Vertex",width=12,font=('SVN-Gotham Medium', 10),
                             command=lambda: RemoveVertex(main_frame2, entry2))
-removeEdgeButt = tk.Button(edit_fm2, text="Remove Edge",width=12,font=('SVN-Gotham Medium', 10),
+removeEdgeButt = Button(edit_fm2, text="Remove Edge",width=12,font=('SVN-Gotham Medium', 10),
                            command=lambda: RemoveEdge(main_frame2, entry2))
-clearGraphButt = tk.Button(edit_fm2, text="Clear", width=12, font=('SVN Gotham Medium', 10), bg='#f4a261',fg='black',
+clearGraphButt = Button(edit_fm2, text="Clear", width=12, font=('SVN Gotham Medium', 10), bg='#f4a261',fg='black',
                         command=lambda: ClearGraph(main_frame2))
-saveGraphButt = tk.Button(edit_fm2, text="Save Graph", width=12,font=('SVN Gotham Medium', 10), bg='#007200',fg='black',
+saveGraphButt = Button(edit_fm2, text="Save Graph", width=12,font=('SVN Gotham Medium', 10), bg='#007200',fg='black',
                           command=lambda: SaveGraph(entry2))
 
 addVertexButt.grid(row=0, column=2, padx=5, pady=5)
