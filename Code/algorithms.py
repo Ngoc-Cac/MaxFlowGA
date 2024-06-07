@@ -133,7 +133,7 @@ def max_flow_GA(capacity_matrix: list[list[int]], crossover_func: int = 1, *,
         as a stop condition.\n
     update_procedure: a function that does whatever you want when a new best individual is found.\
         Note: The function needs to have two parameters representing the current iteration and the best\
-        individual, When the function is called, the algorithm will pass in these two parameters.\
+        individual, When the function is called, the algorithm will pass these two parameters.\
     """
     if best_max_iter == None:
         best_max_iter = max_iter

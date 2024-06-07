@@ -9,13 +9,13 @@ Maximum Flow Problem is a problem involving finding flows through a network whic
 
 ------------------------
 ## How do I run this program?
-It's easy! Just download the directory named 'Program' and run the main.exe file inside the directory.<br>
-Please note that some features may not work properly if you are using MacOS!
+For Windows and Linux: It's easy! Just download the directory named 'Program' and run the main.exe file inside the directory.<br>
+For MacOS: please view the instructions below.
 
 ------------------------
-### Help! Something failed while trying to run main.exe?!!
+### Help! I can't run main.exe?!!
 ------------------------
-If you can not run main.exe. You can instead run the source code provided in the Code directory. Please follow these steps:<br><br>
+If you cannot run main.exe. You can instead run the source code provided in the Code directory. Please follow these steps:<br><br>
 1. First you need to install Python if you do not have Python installed on your computer.
 2. Then, you need to download these three files in Code:
     * Individual.py
@@ -28,7 +28,9 @@ If you can not run main.exe. You can instead run the source code provided in the
     * networkx
     * tkmacosx (MacOS users need to install this library)
 
-Finally, you can now run the program by running main.py. You can run this in any IDE/code editor that supports Python.
+4. Finally, you can now run the program by running main.py. You can run this in any IDE/code editor that supports Python.
+
+Please note that some features might not work properly on MacOS!
 
 ------------------------
 
@@ -36,4 +38,4 @@ Finally, you can now run the program by running main.py. You can run this in any
 Trịnh Ngọc Các<br>
 Đỗ Thị Mỹ Khánh<br>
 Trần Nguyễn Thảo Nguyên<br>
-Nguyễn Vân Phi Yến<br>
+Nguyễn Vân Phi Yến
