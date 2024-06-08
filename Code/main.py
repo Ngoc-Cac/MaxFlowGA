@@ -497,7 +497,7 @@ Total Generation Ran: {result['total_gen']}""")
     
     enablef1butts()
 def update_procedure(iter: int, best_individual: alg.Individual, *, master: tk.Tk) -> None:
-    isbalanced = bool(sum(best_individual.CheckBalanced()))
+    isbalanced = (sum((temp := best_individual.CheckBalanced())) == len(temp))
     best_info.config(text=f"""Balanced: {isbalanced}
 Fitness score: {best_individual.fitness_score: .4f}
 Max Flow: {alg.col_sum(best_individual.dna, -1)}
