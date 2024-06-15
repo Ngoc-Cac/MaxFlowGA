@@ -1,15 +1,36 @@
-from typing import Callable
+from typing import Callable, Literal, Any
 from Individual import Individual
 import random as rand, networkx as nx, math, copy as cp
 
 #Utility functions
 #Functions for 2d matrix manipulation
-def select_random(population: list[Individual]) -> Individual:
+def fuss(population: list[Individual]) -> Individual:
+    """
+    Fitness Uniform Selection Scheme\n\n
+    
+    This selection scheme starts by randomly selecting a value between f_min and f_max,\
+    with f_min and f_max being the smallest and largest fitness value in a population.\
+    The scheme then selects the individual with the fitness score closest to the random\
+    number chosen beforehand.\n
+
+    population: a list of Individuals to choose from
+    """
+    f_min = min(population, key=lambda ind: ind.fitness_score).fitness_score
+    f_max = max(population, key=lambda ind: ind.fitness_score).fitness_score
+    ran_f = rand.uniform(f_min, f_max)
+    distance = math.inf
+    for ind in population:
+        if distance > (temp := abs(ind.fitness_score - ran_f)):
+            distance = temp
+            chosen = ind
+    return chosen
+def fitness_proportionate(population: list[Individual]) -> Individual:
     """Select a random Individual from a pool of Individuals using their fitness as weights\n\n
 
     population: a list of Individuals to choose from
     """
-    return rand.choices(population, [ind.fitness_score for ind in population], k=1)[0]
+    return rand.choices(population, [0 if ind.fitness_score < 0 else ind.fitness_score
+                                     for ind in population], k=1)[0]
 def col_sum(twoDmatrix: list[list[int]], column: int) -> int:
     """Find the sum of numbers along a column in a two-D matrix\n\n
 
@@ -65,12 +86,6 @@ def ford_fulkerson(capacity_matrix: list[list[int]]) -> tuple[int, list[list[int
     return max_flow, res_matrix
 
 #Graph stuff
-def fitness(capacity_matrix: list[list[int]], flow_matrix: list[list[int]]) -> float:
-    """Calculate fitness of a random flow given its capacity_matrix"""
-    temp = Individual()
-    temp.dna = flow_matrix
-    temp.fitness(min(sum(capacity_matrix[0]), col_sum(capacity_matrix, -1)))
-    return temp.fitness_score
 def assign_flow(capacity_matrix: list[list[int]], res_matrix: list[list[int]]) -> list[list[int]]:
     """Assign the actual flow given a residual matrix\n\n
 
@@ -94,8 +109,8 @@ def generate_edges(adjacent_nodes: dict[int: tuple[int]]) -> tuple[tuple[int, in
     """
     return tuple((node, adjacent) for node, adjacents in adjacent_nodes.items()
                                    for adjacent in adjacents)
-def give_edge_weights(edges: tuple[tuple[int, int]], weight_matrix: list[list[int]])\
-                    -> dict[tuple[int, int]: int]:
+def give_edge_weights(edges: tuple[tuple[int, int] | tuple[str, str]], weight_matrix: list[list[int]],
+                      index_table: dict[str, int] | None = None) -> dict[tuple[int, int]: int]:
     """
     Decode the edge weight of a directed graph.\n\n
 
@@ -103,7 +118,10 @@ def give_edge_weights(edges: tuple[tuple[int, int]], weight_matrix: list[list[in
     weight_matrix: a two-D list containing integers. Each element at (i, j) represents
     the weight of the edge from the ith vertex to the jth vertex.
     """
-    return {edge: weight_matrix[edge[0] if edge[0] != 's' else 0][edge[1] if edge[1] != 't' else -1] for edge in edges}
+    if index_table:
+        return {edge: weight_matrix[index_table[edge[0]]][index_table[edge[1]]] for edge in edges}
+    else:
+        return {edge: weight_matrix[edge[0] if edge[0] != 's' else 0][edge[1] if edge[1] != 't' else -1] for edge in edges}
 def draw_digraph(graph: nx.DiGraph, nodes_pos: dict[any: tuple[int, int]],
                  edges: list[tuple[any, any]], edge_weights: dict[tuple[any, any]: float | int],*,\
                  node_font_size=12, edge_label_pos=0.3, edge_font_size=10) -> None:
@@ -113,10 +131,17 @@ def draw_digraph(graph: nx.DiGraph, nodes_pos: dict[any: tuple[int, int]],
     nx.draw_networkx_edge_labels(graph, nodes_pos, edge_weights, label_pos=edge_label_pos, font_size=edge_font_size)
 
 #Genetic Algorithm
+MY_SELECTION_METHODS: dict[str, Callable[[list[Individual]], Individual]] = {'fps': fitness_proportionate,
+                                                                             'fuss': fuss}
 def max_flow_GA(capacity_matrix: list[list[int]], crossover_func: int = 1, *,
                 pop_size: int = 500, mutation_rate: float = 0.05,
                 max_iter: int = 200, best_max_iter: int | None = 10,
-                update_procedure: Callable | None = None) -> dict[str, Individual | int]:
+                selection_method: Literal['fps', 'fuss'] = 'fps',
+                update_procedure: Callable[[int, Individual], Any] | None = None)\
+                -> dict[Literal["total_gen",
+                                "gen_of_best_ind",
+                                "best_of_all_gen",
+                                "best_in_last_gen"], Individual | int]:
     """Genetic Algorithm on Max Flow Problem\n\n
     
     capacity_matrix: a two-D list of integers. Each element at (i, j) represents the capacity flow\
@@ -131,30 +156,34 @@ def max_flow_GA(capacity_matrix: list[list[int]], crossover_func: int = 1, *,
         if best_max_iter = 10, then the algorithm will continue running until no new best individual has\
         been found for 10 consecutive iterations. In case best_max_iter=None, only max_iter is used\
         as a stop condition.\n
+    selection_method:\n
     update_procedure: a function that does whatever you want when a new best individual is found.\
         Note: The function needs to have two parameters representing the current iteration and the best\
         individual, When the function is called, the algorithm will pass these two parameters.\
     """
     if best_max_iter == None:
         best_max_iter = max_iter
+    select_random = MY_SELECTION_METHODS[selection_method]
+    maximal_capacity = min(sum(capacity_matrix[0]), col_sum(capacity_matrix, -1))
+
     population: list[Individual]
     new_pop: list[Individual] = [Individual(capacity_matrix) for _ in range(pop_size)]
     best_ind: Individual = new_pop[0]
     best_at_gen: int
     iter: int = 0
     best_over_gen: int = 0
+
     while (iter := iter + 1) < max_iter and (best_over_gen := best_over_gen + 1) < best_max_iter:
         population = new_pop
         new_pop = []
         for ind in population:
-            ind.fitness(min(sum(capacity_matrix[0]), col_sum(capacity_matrix, -1)))
+            ind.fitness(maximal_capacity)
             if ind.fitness_score > best_ind.fitness_score:
                 best_over_gen = 0
                 best_ind = ind
                 best_at_gen = iter
                 if update_procedure:
                     update_procedure(iter, best_ind)
-                    # sleep(0.3)
         while len(new_pop) < pop_size:
             partA = select_random(population)
             partB = select_random(population)

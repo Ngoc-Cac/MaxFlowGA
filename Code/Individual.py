@@ -103,8 +103,6 @@ class Individual():
             self.fitness_score = sum(balance_matrix) / len(balance_matrix)\
                                 - excess_flow / total_flow\
                                 + min(self.inflow[-1], self.outflow[0]) / maximal_capacity
-        if self.fitness_score < 0:
-            self.fitness_score = 0
     def crossover(self, partner: 'Individual', function_index: int = 1) -> 'Individual':
         """
         Apply crossover between this object and another Individual. See each respective crossover
@@ -144,7 +142,7 @@ class Individual():
         mutation_rate = mutation_rate
         mutated: bool
         # iterating through every vertices except the source and sink
-        for i in range(1, len(self.dna) - 1):
+        for i in range(1, len(self._dna) - 1):
             if rand.random() > mutation_rate:
                 continue
             mutated = False
@@ -154,50 +152,40 @@ class Individual():
                 # basically iterating through the outcoming edges
                 edges = []
                 for j, val in enumerate(capacity_matrix[i]):
-                    if val != 0 and self.dna[i][j] < val:
-                        # self.dna[i][j] += 1
-                        # mutated = True
-                        # break
+                    if val != 0 and self._dna[i][j] < val:
                         edges.append((i, j))
                 if edges:
                     random_edge = rand.choice(edges)
-                    self.dna[random_edge[0]][random_edge[1]] += 1
+                    self._dna[random_edge[0]][random_edge[1]] += 1
                     continue
                 # if no mutation yet, try to decrement the inflow
                 # this is done by iterating through the column at index i
                 # basically iterating through the incoming edge
                 for j, _ in enumerate(capacity_matrix):
-                    if capacity_matrix[j][i] != 0 and self.dna[j][i] > 0:
-                        # self.dna[j][i] -= 1
-                        # break
+                    if capacity_matrix[j][i] != 0 and self._dna[j][i] > 0:
                         edges.append((j, i))
                 random_edge = rand.choice(edges)
-                self.dna[random_edge[0]][random_edge[1]] -= 1
+                self._dna[random_edge[0]][random_edge[1]] -= 1
             # case where there's more flow going out -> prioritise incrementing the inflow
             elif self.inflow[i] < self.outflow[i]:
                 # iterates through the column at index i
                 # basically iterating through the incoming edge
                 edges = []
                 for j, _ in enumerate(capacity_matrix):
-                    if capacity_matrix[j][i] != 0 and self.dna[j][i] < capacity_matrix[j][i]:
-                        # self.dna[j][i] += 1
-                        # mutated = True
-                        # break
+                    if capacity_matrix[j][i] != 0 and self._dna[j][i] < capacity_matrix[j][i]:
                         edges.append((j, i))
                 if edges:
                     random_edge = rand.choice(edges)
-                    self.dna[random_edge[0]][random_edge[1]] += 1
+                    self._dna[random_edge[0]][random_edge[1]] += 1
                     continue
                 # if no mutation yet, try to decrement the outflow
                 # iterates through the row at index i
                 # basically iterating through the outcoming edges
                 for j, val in enumerate(capacity_matrix[i]):
-                    if val != 0 and self.dna[i][j] > 0:
-                        # self.dna[i][j] -= 1
-                        # break
+                    if val != 0 and self._dna[i][j] > 0:
                         edges.append((i, j))
                 random_edge = rand.choice(edges)
-                self.dna[random_edge[0]][random_edge[1]] -= 1
+                self._dna[random_edge[0]][random_edge[1]] -= 1
             # case where the node is balanced => try to increment both outflow and inflow
             # if either direction is not possible, don't do it!!
             else:
@@ -206,7 +194,7 @@ class Individual():
                 # and see which edges can be incremented, append it to a pool for random selection
                 # afterwards choose a random edge to increment
                 for j, val in enumerate(capacity_matrix[i]):
-                    if self.dna[i][j] < val:
+                    if self._dna[i][j] < val:
                         indices_pool.append((i, j))
                 if not indices_pool:
                     continue
@@ -214,13 +202,13 @@ class Individual():
                 indices_pool = []
                 # do the same thing but with elments at column i instead (basically the incoming edges)
                 for j, row in enumerate(capacity_matrix):
-                    if self.dna[j][i] < row[i]:
+                    if self._dna[j][i] < row[i]:
                         indices_pool.append((j, i))
                 if not indices_pool:
                     continue
                 temp_indices2 = rand.choice(indices_pool)
-                self.dna[temp_indices1[0]][temp_indices1[1]] += 1
-                self.dna[temp_indices2[0]][temp_indices2[1]] += 1
+                self._dna[temp_indices1[0]][temp_indices1[1]] += 1
+                self._dna[temp_indices2[0]][temp_indices2[1]] += 1
         self.UpdateFlowrate()
     def c1(self, partner: 'Individual') -> 'Individual':
         """Perform crossover on two individuals\n
