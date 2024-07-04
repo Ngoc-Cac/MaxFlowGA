@@ -137,7 +137,8 @@ def max_flow_GA(capacity_matrix: list[list[int]], crossover_func: int = 1, *,
                 pop_size: int = 500, mutation_rate: float = 0.05,
                 max_iter: int = 200, best_max_iter: int | None = 10,
                 selection_method: Literal['fps', 'fuss'] = 'fps',
-                update_procedure: Callable[[int, Individual], Any] | None = None)\
+                update_best_procedure: Callable[[int, Individual], Any] | None = None,
+                update_pop_procedure: Callable[[int, list[Individual]], Any] | None = None)\
                 -> dict[Literal["total_gen",
                                 "gen_of_best_ind",
                                 "best_of_all_gen",
@@ -182,14 +183,16 @@ def max_flow_GA(capacity_matrix: list[list[int]], crossover_func: int = 1, *,
                 best_over_gen = 0
                 best_ind = ind
                 best_at_gen = iter
-                if update_procedure:
-                    update_procedure(iter, best_ind)
+                if update_best_procedure:
+                    update_best_procedure(iter, best_ind)
         while len(new_pop) < pop_size:
             partA = select_random(population)
             partB = select_random(population)
             child = partA.crossover(partB, crossover_func)
             child.mutate(capacity_matrix, mutation_rate)
             new_pop.append(child)
+        if update_pop_procedure:
+            update_pop_procedure(iter, population)
 
     solution: dict[str, Individual | int] = {"total_gen": iter,
                                              "gen_of_best_ind": best_at_gen,
