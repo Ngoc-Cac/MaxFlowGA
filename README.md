@@ -1,4 +1,5 @@
 # Maximum Flow Problem with Genetic Algorithm
+Maximum Flow Algorithm using DNAs and stuff
 ## What is this project?
 This is a group final AI project on the Max Flow Problem using Genetic Algorithm. Our group use a simple implementation of the algorithm by taking advantage of the fact that a network can be represented by its weight matrix.
 
