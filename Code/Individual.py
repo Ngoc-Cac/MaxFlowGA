@@ -1,32 +1,41 @@
 from copy import deepcopy
 import random as rand
 
+from typing import Literal
+
 class Individual():
-    """Network Flow - Max Flow Optimisation\n
-    An individual is a feasible solution of the problem. It's DNA is defined to be a graph that has\
-    been filled in.
+    """
+    ## Network Flow - Max Flow Optimisation
+    An individual is a feasible solution of the problem. It's DNA is defined
+    to be a network that has been filled in.
+
+    Internally, the DNA is 2D-square matrix, similar to the capacity matrix.
+    Each element shows the flow of a solution. Each element must be between
+    0 and its flow capacity.
     """
     __slots__ = "_dna", "inflow", "outflow", "fitness_score"
     def __init__(self, capacity_matrix: list[list[int]] | None = None) -> None:
-        """
-        When creating an individual, a capacity matrix is needed to actually generate a random DNA.\
-        If no capacity matrix is given then an Individual is created without declaring any of its\
-        attribute.\n\n
+        r"""
+        When creating an individual, a capacity matrix is needed to
+        generate a random DNA. If no capacity matrix is given then an
+        Individual is created without declaring any of its attribute.
 
-        Internally, the DNA is also 2D-square matrix, similar to the capacity matrix. Each element shows\
-        the flow of a solution. Each element must be between 0 and its flow capacity.\n
+        A capacity matrix is a 2D-square matrix. The matrix shows the flow
+        capacity from one vertex to another. For any element :math:`e_{ij}`, it
+        represents the flow from the vertex indexed at i to the vertex indexed at j.
 
-        capacity_matrix: (Optional) A capacity matrix is a 2D-square matrix. The matrix shows the flow\
-            capacity from one vertex to another. For any element e_{ij}, it represents the flow from the\
-            vertex indexed at i to the vertex indexed at j.\
-            For example, at the element at index (0, 1) has a value of 10. That means the flow from the 0th\
-            vertex to the 1st vertex is 10.
+        For example, if the element at index `(0, 1)` has a value of `10`,
+        that means the flow from the 0th vertex to the 1st vertex is `10`.
+
+        :param list[list[int]] | None capacity_matrix: The capacity matrix of the network.
+            This is `None` by default. In such case, The DNA is not initialized.
         """
         if capacity_matrix:
             self._dna: list[list[int]] = Individual.random_flow(capacity_matrix)
-            self.UpdateFlowrate()
+            self._update_flowrate()
     
-    #getter and setter for dna attribute, note, every time a new dna is assigned, we must update the flowrate
+    # getter and setter for dna attribute
+    # note, every time a new dna is assigned, we must update the flowrate
     @property
     def dna(self) -> list[list[int]]:
         if not hasattr(self, "_dna"):
@@ -35,38 +44,44 @@ class Individual():
     @dna.setter
     def dna(self, new_dna: list[list[int]]) -> None:
         self._dna = new_dna
-        self.UpdateFlowrate()
+        self._update_flowrate()
 
     def random_flow(capacity_matrix: list[list[int]]) -> list[list[int]]:
-        """A class method used to generate a random solution, given the capacity matrix\n
+        """A class method used to generate a random solution, given the capacity matrix.
 
-        capacity_matrix: A capacity matrix is a 2D-square matrix. The matrix shows the flow\
-            capacity from one vertex to another. For any element e_{ij}, it represents the flow from the\
-            vertex indexed at i to the vertex indexed at j.\
-            For example, at the element at index (0, 1) has a value of 10. That means the flow from the 0th\
-            vertex to the 1st vertex is 10.
+        :param list[list[int]] capacity_matrix: The capacity matrix of a network.
+        :return: The flow matrix.
+        :rtype: list[list[int]]
         """
         result: list[list[int]] = [[0] * len(capacity_matrix) for _ in range(len(capacity_matrix))]
         for i, row in enumerate(capacity_matrix):
             for j, val in enumerate(row):
                 result[i][j] = rand.randint(0, val)
         return result
-    def UpdateFlowrate(self) -> None:
-        """Update the Inflows and Outflows of the solution\n
-        In simple words, inflow implies the incoming flow to a vertex. Similarly, outflow implies the\
-        outcoming flow at a vertex.\n
+    def _update_flowrate(self) -> None:
+        """
+        Update the Inflows and Outflows of the solution.
+        
+        In simple words, inflow implies the incoming flow to a vertex.
+        Similarly, outflow implies the outcoming flow at a vertex.
 
-        For example: Consider the given solution to a graph containing 4 nodes\n
-        0 1 0 2\n
-        0 0 2 0\n
-        0 3 0 4\n
-        0 0 0 0\n
-        At the 1st vertex, its inflow is 4 (1 + 3), represented by the sum of elements in the second\
-        column. Its outflow is 2, represented by the sum of elements in the second row.\n
-        At the 0th vertex, its inflow is 0, and it's outflow is 3 (1 + 2).\n
-        At the 2nd vertex, its inflow is 2 and its outflow is 4.\n
-        At the 3rd vertex, its inflow is 6 and its outflow is 0.\n
-        Note that the source vertex (0th vertex) has no inflow, and the sink vertex (3rd vertex) has\
+        For example: Consider the given solution to a graph containing 4 nodes
+        ```
+           [[0, 1, 0, 2],
+            [0, 0, 2, 0],
+            [0, 3, 0, 4],
+            [0, 0, 0, 0]]
+        ```
+        At the 1st vertex, its inflow is 4 (1 + 3), represented by the sum of elements in the second
+        column. Its outflow is 2, represented by the sum of elements in the second row.
+
+        At the 0th vertex, its inflow is 0, and it's outflow is 3 (1 + 2).
+        
+        At the 2nd vertex, its inflow is 2 and its outflow is 4.
+        
+        At the 3rd vertex, its inflow is 6 and its outflow is 0.
+        
+        Note that the source vertex (0th vertex) has no inflow, and the sink vertex (3rd vertex) has
         no outflow.
         """
         self.inflow = [0] * len(self.dna)
@@ -75,13 +90,17 @@ class Individual():
             for j, val in enumerate(row):
                 self.outflow[i] += val
                 self.inflow[j] += val
-    def CheckBalanced(self) -> list[bool]:
-        """Check the balance of graph's vertices\n
-        A vertex is said to be balance if its inflow is equal to its outflow.\n
-        Inflow implies the incoming flow to a vertex. Outflow implies the\
-        outcoming flow at a vertex.\n
-        Function returns a list of booleans, where at each index i, the value is True if the ith vertex\
-        is balance, False otherwise.
+    def check_balanced(self) -> list[bool]:
+        """
+        Check the balance of graph's vertices
+
+        A vertex is said to be balance if its inflow is equal to its outflow.
+        Inflow implies the incoming flow to a vertex. Outflow implies the outcoming
+        flow at a vertex.
+
+        :return: A list of bool where the element at index `i` is `True` if the `i`th 
+            vertex is balance.
+        :rtype: list[bool]
         """
         isBalanced: list[bool] = [False] * len(self.dna)
         for i, val in enumerate(self.inflow):
@@ -90,11 +109,14 @@ class Individual():
         isBalanced[0], isBalanced[len(self.dna) - 1] = True, True
         return isBalanced
     def fitness(self, maximal_capacity: int) -> None:
-        """Calculate the fitness of an individual\n
-        maximal_capacity: a value shows the maximal flow of given graph assuming that all\
-            intermediate edges' capacity allows for such flow
         """
-        balance_matrix: list[bool] = self.CheckBalanced()
+        Calculate the fitness of an individual
+        
+        :param int maximal_capacity: A value shows the maximal flow
+            of given graph assuming that all intermediate edges'
+            capacity allows for such flow.
+        """
+        balance_matrix: list[bool] = self.check_balanced()
         excess_flow: int = sum([abs(self.inflow[i] - self.outflow[i]) for i in range(1, len(self.inflow) - 1)])
         total_flow: int = sum(self.outflow)
         if total_flow == 0:
@@ -103,14 +125,14 @@ class Individual():
             self.fitness_score = sum(balance_matrix) / len(balance_matrix)\
                                 - excess_flow / total_flow\
                                 + min(self.inflow[-1], self.outflow[0]) / maximal_capacity
-    def crossover(self, partner: 'Individual', function_index: int = 1) -> 'Individual':
+    def crossover(self, partner: 'Individual', function_index: Literal[1, 2, 3] = 1) -> 'Individual':
         """
-        Apply crossover between this object and another Individual. See each respective crossover
-        function for more details.
+        Apply crossover between this object and another Individual.
+        See each respective crossover function for more details.
 
-        partner: an Individual to perform crossover with
-        function_index: the crossover function to use, should be a number between 1 and 3. By default,
-        use crossover function 1.
+        :param Individual partner: An Individual to perform crossover with.
+        :param Literal[1, 2, 3] function_index: The crossover function to use,
+            should be a number between 1 and 3. By default, use crossover function 1.
         """
         if function_index == 1:
             return self.c1(partner)
@@ -122,30 +144,26 @@ class Individual():
             raise ValueError(f"There are only 3 crossover function! {function_index=} was passed")
     def mutate(self, capacity_matrix: list[list[int]], mutation_rate: float) -> None:
         """
-        Apply mutation over an individual. Mutation tries to adjust the solution for more optimisation\n
-        Mutation is done as follows:\n
-        1. Start at the vertex indexed 1.\n
-        2. Determine whether or not to mutate this vertex, if no mutation, go to step 4.\n
-        3. If the vertex is not balance, try to change the flow at the vertex by increment/decrement of 1.\
-            For better optimisation, we always prioritise incrementing the flow first. If no outflowing edge\
-            can be incremented due to reaching the flow capacity. We will try to decrement an inflowing edge.\n
-            In case when the vertex is balance, raise NotImplementedError().\n
+        Apply mutation over an individual. Mutation tries to adjust
+        the solution for more optimisation. Mutation is done as follows:
+        1. Start at the first vertex.
+        2. Determine whether or not to mutate this vertex,
+            if no mutation, go to step 4.
+        3. If the vertex is not balance, try to change the flow at
+            the vertex by increment/decrement of 1. For better optimisation,
+            we always prioritise incrementing the flow first. If no outflowing edge
+            can be incremented due to reaching the flow capacity. We will try to
+            decrement an inflowing edge.
         4. Repeat step 2 with the next vertex.
 
-        capacity_matrix: A capacity matrix is a 2D-square matrix. The matrix shows the flow\
-            capacity from one vertex to another. For any element e_{ij}, it represents the flow from the\
-            vertex indexed at i to the vertex indexed at j.\
-            For example, at the element at index (0, 1) has a value of 10. That means the flow from the 0th\
-            vertex to the 1st vertex is 10.
-        mutation_rate: a float representing the rate of mutation. Must be between 0 and 1
+        :param list[list[int]] capacity_matrix: The capacity matrix of the network.
+        :param float mutation_rate: F float representing the rate of mutation. Must be between 0 and 1
         """
         mutation_rate = mutation_rate
-        mutated: bool
         # iterating through every vertices except the source and sink
         for i in range(1, len(self._dna) - 1):
             if rand.random() > mutation_rate:
                 continue
-            mutated = False
             # case where there's more flow coming in => prioritise incrementing outflow
             if self.inflow[i] > self.outflow[i]:
                 # iterates through the row at index i
@@ -209,19 +227,19 @@ class Individual():
                 temp_indices2 = rand.choice(indices_pool)
                 self._dna[temp_indices1[0]][temp_indices1[1]] += 1
                 self._dna[temp_indices2[0]][temp_indices2[1]] += 1
-        self.UpdateFlowrate()
+        self._update_flowrate()
     def c1(self, partner: 'Individual') -> 'Individual':
-        """Perform crossover on two individuals\n
-        When doing crossover, we go through each vertices and decide whether we would take the partner's vertex\
-        instead. Decision is based on the balance of that vertex as well as its flow.\n
-        When choosing between two vertices, we prioritise taking the more balanced vertex, that is the vertex\
-        with less excess flow (excess flow is difference between inflow and outflow).\n
-        In the case where both vertices have the same balance, we prioritise taking the vertex with higher flow.\
-        This comparision can be done on either the inflow or the outflow. This implementation chooses to use the\
-        inflow for comparision.\n\n
+        """Perform crossover on two individuals
+        When doing crossover, we go through each vertices and decide whether we would take the partner's vertex
+        instead. Decision is based on the balance of that vertex as well as its flow.
+        When choosing between two vertices, we prioritise taking the more balanced vertex, that is the vertex
+        with less excess flow (excess flow is difference between inflow and outflow).
+        In the case where both vertices have the same balance, we prioritise taking the vertex with higher flow.
+        This comparision can be done on either the inflow or the outflow. This implementation chooses to use the
+        inflow for comparision.
 
-        When a vertex is chosen to be encoded to the child, every edges that connects the vertex is written into\
-        the child's DNA. In the case where the edge has already been written to beforehand. We take the average\
+        When a vertex is chosen to be encoded to the child, every edges that connects the vertex is written into
+        the child's DNA. In the case where the edge has already been written to beforehand. We take the average
         between the old and new flow.
         partner: an Individual to perform crossover with
         """
