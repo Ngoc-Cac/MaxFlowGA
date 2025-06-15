@@ -1,7 +1,27 @@
-from copy import deepcopy
 import random as rand
+import numpy as np
 
+from copy import deepcopy
+
+from numpy.typing import NDArray
 from typing import Literal
+
+
+_np_rng = np.random.default_rng()
+
+def random_flow(capacity_matrix: NDArray) -> NDArray:
+    """Generate a random solution, given the capacity matrix.
+
+    :param NDArray capacity_matrix: The capacity matrix of a network.
+    :return: The flow matrix.
+    :rtype: NDArray
+    """
+    return _np_rng.integers(
+        np.zeros(capacity_matrix.shape),
+        capacity_matrix,
+        capacity_matrix.shape,
+        endpoint=True
+    )
 
 class Individual():
     """
@@ -14,7 +34,7 @@ class Individual():
     0 and its flow capacity.
     """
     __slots__ = "_dna", "inflow", "outflow", "fitness_score"
-    def __init__(self, capacity_matrix: list[list[int]] | None = None) -> None:
+    def __init__(self, capacity_matrix: NDArray | None = None):
         r"""
         When creating an individual, a capacity matrix is needed to
         generate a random DNA. If no capacity matrix is given then an
@@ -27,38 +47,27 @@ class Individual():
         For example, if the element at index `(0, 1)` has a value of `10`,
         that means the flow from the 0th vertex to the 1st vertex is `10`.
 
-        :param list[list[int]] | None capacity_matrix: The capacity matrix of the network.
+        :param NDArray | None capacity_matrix: The capacity matrix of the network.
             This is `None` by default. In such case, The DNA is not initialized.
         """
-        if capacity_matrix:
-            self._dna: list[list[int]] = Individual.random_flow(capacity_matrix)
+        if not capacity_matrix is None:
+            self._dna = random_flow(capacity_matrix)
             self._update_flowrate()
     
     # getter and setter for dna attribute
     # note, every time a new dna is assigned, we must update the flowrate
     @property
-    def dna(self) -> list[list[int]]:
+    def dna(self) -> NDArray:
         if not hasattr(self, "_dna"):
             raise AttributeError("'dna' attribute has not been initialised")
-        return deepcopy(self._dna)
+        return np.array(self._dna)
     @dna.setter
-    def dna(self, new_dna: list[list[int]]) -> None:
-        self._dna = new_dna
+    def dna(self, new_dna: NDArray):
+        self._dna = np.array(new_dna)
         self._update_flowrate()
 
-    def random_flow(capacity_matrix: list[list[int]]) -> list[list[int]]:
-        """A class method used to generate a random solution, given the capacity matrix.
-
-        :param list[list[int]] capacity_matrix: The capacity matrix of a network.
-        :return: The flow matrix.
-        :rtype: list[list[int]]
-        """
-        result: list[list[int]] = [[0] * len(capacity_matrix) for _ in range(len(capacity_matrix))]
-        for i, row in enumerate(capacity_matrix):
-            for j, val in enumerate(row):
-                result[i][j] = rand.randint(0, val)
-        return result
-    def _update_flowrate(self) -> None:
+    
+    def _update_flowrate(self):
         """
         Update the Inflows and Outflows of the solution.
         
@@ -72,25 +81,164 @@ class Individual():
             [0, 3, 0, 4],
             [0, 0, 0, 0]]
         ```
-        At the 1st vertex, its inflow is 4 (1 + 3), represented by the sum of elements in the second
-        column. Its outflow is 2, represented by the sum of elements in the second row.
-
-        At the 0th vertex, its inflow is 0, and it's outflow is 3 (1 + 2).
-        
-        At the 2nd vertex, its inflow is 2 and its outflow is 4.
-        
-        At the 3rd vertex, its inflow is 6 and its outflow is 0.
-        
-        Note that the source vertex (0th vertex) has no inflow, and the sink vertex (3rd vertex) has
-        no outflow.
         """
-        self.inflow = [0] * len(self.dna)
-        self.outflow = [0] * len(self.dna)
-        for i, row in enumerate(self.dna):
-            for j, val in enumerate(row):
-                self.outflow[i] += val
-                self.inflow[j] += val
-    def check_balanced(self) -> list[bool]:
+        self.inflow = self._dna.sum(axis=0)
+        self.outflow = self._dna.sum(axis=1)
+
+    def _overflow_mutation(self,
+        capacity_matrix: NDArray,
+        mutable: NDArray
+    ):
+        overflow = (self.inflow > self.outflow)
+        mutable_vertices = np.argwhere(overflow & mutable)[:, 0]
+
+
+        # go over every rows (every outcoming edges)
+        # and get the edges where we can increment
+        mutable_idx = np.argwhere(
+            (capacity_matrix[mutable_vertices] != 0) &
+            (self._dna[mutable_vertices] < capacity_matrix[mutable_vertices])
+        )
+        unique, idx, counts = np.unique(
+            mutable_idx[:, 0],
+            return_counts=True,
+            return_index=True,
+        )
+        if unique.shape[0]: # just condition for efficiency
+            rand_idx = _np_rng.integers(
+                np.zeros(counts.shape), counts,
+                counts.shape
+            ) + idx
+
+            rows, cols = mutable_idx[rand_idx, 0], mutable_idx[rand_idx, 1]
+            rows = mutable_vertices[rows]
+            self._dna[rows, cols] += 1
+        
+        mutable_vertices = np.delete(mutable_vertices, unique)
+        if mutable_vertices.shape[0]:
+            # if there are still vertices that havent been mutated (outflow at capacity)
+            # then go through every columns (every incoming edges)
+            # and decrement the inflow
+            mutable_idx = np.argwhere(
+                (capacity_matrix[:, mutable_vertices] != 0) &
+                (self._dna[:, mutable_vertices] > 0)
+            )
+            unique, idx, counts = np.unique(
+                mutable_idx[:, 1],
+                return_counts=True,
+                return_index=True,
+            )
+            rand_idx = _np_rng.integers(
+                np.zeros(counts.shape), counts,
+                counts.shape
+            ) + idx
+
+            rows, cols = mutable_idx[rand_idx, 0], mutable_idx[rand_idx, 1]
+            cols = mutable_vertices[cols]
+            self._dna[rows, cols] -= 1
+
+    def _underflow_mutation(self,
+        capacity_matrix: NDArray,
+        mutable: NDArray
+    ):
+        underflow = (self.inflow < self.outflow)
+        mutable_vertices = np.argwhere(underflow & mutable)[:, 0]
+
+        # slight opposite to the method above
+        # we first increment the inflow
+        mutable_idx = np.argwhere(
+            (capacity_matrix[:, mutable_vertices] != 0) &
+            (self._dna[:, mutable_vertices] < capacity_matrix[:, mutable_vertices])
+        )
+        unique, idx, counts = np.unique(
+            mutable_idx[:, 1],
+            return_counts=True,
+            return_index=True,
+        )
+        if unique.shape[0]:
+            rand_idx = _np_rng.integers(
+                np.zeros(counts.shape), counts,
+                counts.shape
+            ) + idx
+
+            rows, cols = mutable_idx[rand_idx, 0], mutable_idx[rand_idx, 1]
+            cols = mutable_vertices[cols]
+            self._dna[rows, cols] += 1
+
+        mutable_vertices = np.delete(mutable_vertices, unique)
+        if mutable_vertices.shape[0]:
+            # if inflow can't be incremented
+            # decrement outflow instead
+            mutable_idx = np.argwhere(
+                (capacity_matrix[mutable_vertices] != 0) &
+                (self._dna[mutable_vertices] > 0)
+            )
+            unique, idx, counts = np.unique(
+                mutable_idx[:, 0],
+                return_counts=True,
+                return_index=True,
+            )
+            rand_idx = _np_rng.integers(
+                np.zeros(counts.shape), counts,
+                counts.shape
+            ) + idx
+
+            rows, cols = mutable_idx[rand_idx, 0], mutable_idx[rand_idx, 1]
+            rows = mutable_vertices[rows]
+            self._dna[rows, cols] -= 1
+
+    def _balanced_mutation(self,
+        capacity_matrix: NDArray,
+        mutable: NDArray
+    ):
+        balanced = (self.inflow == self.outflow) & mutable
+        mutable_vertices = np.argwhere(balanced & mutable)[:, 0]
+
+        # go over every row and col (outflow and inflow)
+        # and check which edge has not reached capacity yet
+        mutable_out_idx = np.argwhere(
+            self._dna[mutable_vertices] < capacity_matrix[mutable_vertices]
+        )
+        mutable_in_idx = np.argwhere(
+            self._dna[:, mutable_vertices] < capacity_matrix[:, mutable_vertices]
+        )
+
+        if not mutable_out_idx.shape[0] or not mutable_in_idx.shape[0]:
+            # if all has reached capacity then ignore
+            return
+        
+        # begin choosing a random outgoing edge and incoming edge
+        # to increment flow
+        _, out_idx, counts_1 = np.unique(
+            mutable_out_idx[:, 0],
+            return_counts=True,
+            return_index=True,
+        )
+        _, in_idx, counts_2 = np.unique(
+            mutable_in_idx[:, 1],
+            return_counts=True,
+            return_index=True,
+        )
+
+        rand_out_idx = _np_rng.integers(
+            np.zeros(counts_1.shape), counts_1,
+            counts_1.shape
+        ) + out_idx
+        rand_in_idx = _np_rng.integers(
+            np.zeros(counts_2.shape), counts_2,
+            counts_2.shape
+        ) + in_idx
+
+        rows_1, cols_1 = mutable_out_idx[rand_out_idx, 0], mutable_out_idx[rand_out_idx, 1]
+        rows_1 = mutable_vertices[rows_1]
+
+        rows_2, cols_2 = mutable_in_idx[rand_in_idx, 0], mutable_in_idx[rand_in_idx, 1]
+        cols_2 = mutable_vertices[cols_2]
+        self._dna[rows_1, cols_1] += 1
+        self._dna[rows_2, cols_2] += 1
+
+
+    def check_balanced(self) -> NDArray:
         """
         Check the balance of graph's vertices
 
@@ -98,17 +246,13 @@ class Individual():
         Inflow implies the incoming flow to a vertex. Outflow implies the outcoming
         flow at a vertex.
 
-        :return: A list of bool where the element at index `i` is `True` if the `i`th 
-            vertex is balance.
-        :rtype: list[bool]
+        :return: A numpy array of bool where the element at index
+            `i` is `True` iff the `i`th vertex is balance.
+        :rtype: NDArray
         """
-        isBalanced: list[bool] = [False] * len(self.dna)
-        for i, val in enumerate(self.inflow):
-            if self.outflow[i] == val:
-                isBalanced[i] = True
-        isBalanced[0], isBalanced[len(self.dna) - 1] = True, True
-        return isBalanced
-    def fitness(self, maximal_capacity: int) -> None:
+        return self.inflow == self.outflow
+    
+    def fitness(self, maximal_capacity: int):
         """
         Calculate the fitness of an individual
         
@@ -116,16 +260,22 @@ class Individual():
             of given graph assuming that all intermediate edges'
             capacity allows for such flow.
         """
-        balance_matrix: list[bool] = self.check_balanced()
-        excess_flow: int = sum([abs(self.inflow[i] - self.outflow[i]) for i in range(1, len(self.inflow) - 1)])
-        total_flow: int = sum(self.outflow)
+        balance_matrix = self.check_balanced()
+        excess_flow = abs(self.inflow[1:-1] - self.outflow[1:-1]).sum()
+        total_flow = self.outflow.sum()
         if total_flow == 0:
             self.fitness_score = 0
         else:
-            self.fitness_score = sum(balance_matrix) / len(balance_matrix)\
-                                - excess_flow / total_flow\
-                                + min(self.inflow[-1], self.outflow[0]) / maximal_capacity
-    def crossover(self, partner: 'Individual', function_index: Literal[1, 2, 3] = 1) -> 'Individual':
+            self.fitness_score = (
+                balance_matrix.sum() / balance_matrix.shape[0]
+                - excess_flow / total_flow
+                + min(self.inflow[-1], self.outflow[0]) / maximal_capacity
+            )
+
+    def crossover(self,
+        partner: 'Individual',
+        function_index: Literal[1, 2, 3] = 1
+    ) -> 'Individual':
         """
         Apply crossover between this object and another Individual.
         See each respective crossover function for more details.
@@ -142,7 +292,11 @@ class Individual():
             return self.c3(partner)
         else:
             raise ValueError(f"There are only 3 crossover function! {function_index=} was passed")
-    def mutate(self, capacity_matrix: list[list[int]], mutation_rate: float) -> None:
+        
+    def mutate(self,
+        capacity_matrix: NDArray,
+        mutation_rate: float
+    ) -> None:
         """
         Apply mutation over an individual. Mutation tries to adjust
         the solution for more optimisation. Mutation is done as follows:
@@ -156,78 +310,19 @@ class Individual():
             decrement an inflowing edge.
         4. Repeat step 2 with the next vertex.
 
-        :param list[list[int]] capacity_matrix: The capacity matrix of the network.
-        :param float mutation_rate: F float representing the rate of mutation. Must be between 0 and 1
+        :param NDArray capacity_matrix: The capacity matrix of the network.
+        :param float mutation_rate: A float representing the rate of mutation. Must be between 0 and 1
         """
-        mutation_rate = mutation_rate
-        # iterating through every vertices except the source and sink
-        for i in range(1, len(self._dna) - 1):
-            if rand.random() > mutation_rate:
-                continue
-            # case where there's more flow coming in => prioritise incrementing outflow
-            if self.inflow[i] > self.outflow[i]:
-                # iterates through the row at index i
-                # basically iterating through the outcoming edges
-                edges = []
-                for j, val in enumerate(capacity_matrix[i]):
-                    if val != 0 and self._dna[i][j] < val:
-                        edges.append((i, j))
-                if edges:
-                    random_edge = rand.choice(edges)
-                    self._dna[random_edge[0]][random_edge[1]] += 1
-                    continue
-                # if no mutation yet, try to decrement the inflow
-                # this is done by iterating through the column at index i
-                # basically iterating through the incoming edge
-                for j, _ in enumerate(capacity_matrix):
-                    if capacity_matrix[j][i] != 0 and self._dna[j][i] > 0:
-                        edges.append((j, i))
-                random_edge = rand.choice(edges)
-                self._dna[random_edge[0]][random_edge[1]] -= 1
-            # case where there's more flow going out -> prioritise incrementing the inflow
-            elif self.inflow[i] < self.outflow[i]:
-                # iterates through the column at index i
-                # basically iterating through the incoming edge
-                edges = []
-                for j, _ in enumerate(capacity_matrix):
-                    if capacity_matrix[j][i] != 0 and self._dna[j][i] < capacity_matrix[j][i]:
-                        edges.append((j, i))
-                if edges:
-                    random_edge = rand.choice(edges)
-                    self._dna[random_edge[0]][random_edge[1]] += 1
-                    continue
-                # if no mutation yet, try to decrement the outflow
-                # iterates through the row at index i
-                # basically iterating through the outcoming edges
-                for j, val in enumerate(capacity_matrix[i]):
-                    if val != 0 and self._dna[i][j] > 0:
-                        edges.append((i, j))
-                random_edge = rand.choice(edges)
-                self._dna[random_edge[0]][random_edge[1]] -= 1
-            # case where the node is balanced => try to increment both outflow and inflow
-            # if either direction is not possible, don't do it!!
-            else:
-                indices_pool: list[tuple[int, int]] = []
-                # iterating through the row at index i (basically the outcoming edges)
-                # and see which edges can be incremented, append it to a pool for random selection
-                # afterwards choose a random edge to increment
-                for j, val in enumerate(capacity_matrix[i]):
-                    if self._dna[i][j] < val:
-                        indices_pool.append((i, j))
-                if not indices_pool:
-                    continue
-                temp_indices1 = rand.choice(indices_pool)
-                indices_pool = []
-                # do the same thing but with elments at column i instead (basically the incoming edges)
-                for j, row in enumerate(capacity_matrix):
-                    if self._dna[j][i] < row[i]:
-                        indices_pool.append((j, i))
-                if not indices_pool:
-                    continue
-                temp_indices2 = rand.choice(indices_pool)
-                self._dna[temp_indices1[0]][temp_indices1[1]] += 1
-                self._dna[temp_indices2[0]][temp_indices2[1]] += 1
+        proba = _np_rng.random(self._dna.shape[0])
+        needs_mutation = proba <= mutation_rate
+        needs_mutation[[0, -1]] = False
+
+        self._overflow_mutation(capacity_matrix, needs_mutation)
+        self._underflow_mutation(capacity_matrix, needs_mutation)
+        self._balanced_mutation(capacity_matrix, needs_mutation)
+        
         self._update_flowrate()
+    
     def c1(self, partner: 'Individual') -> 'Individual':
         """Perform crossover on two individuals
         When doing crossover, we go through each vertices and decide whether we would take the partner's vertex
@@ -243,38 +338,43 @@ class Individual():
         between the old and new flow.
         partner: an Individual to perform crossover with
         """
-        new_dna: list[list[int]] = [[0] * len(self.dna) for _ in range(len(self.dna))]
-        chosen: 'Individual'
-        ColAssigned: dict[int: bool] = {i: False for i in range(1, len(self.dna))}
-        RowAssigned: dict[int: bool] = {i: False for i in range(1, len(self.dna))}
-        for i in range(1, len(self.dna) - 1):
+        new_dna = np.zeros(self._dna.shape)
+        row_assigned = np.zeros(self._dna.shape, dtype=bool)
+        col_assigned = np.zeros(self._dna.shape, dtype=bool)
+        
+        for i in range(1, len(self._dna) - 1):
             # note: order in which these conditions are checked MATTERS!!!
             # DO NOT TRY TO REFACTOR THIS CONDITION CHECKING!!!
             if (exA := abs(self.inflow[i] - self.outflow[i])) < (exB := abs(partner.inflow[i] - partner.outflow[i])):
-                chosen = self.dna
+                chosen = self._dna
             elif exA > exB:
-                chosen = partner.dna
+                chosen = partner._dna
             elif self.inflow[i] > partner.inflow[i]:
-                chosen = self.dna
+                chosen = self._dna
             elif self.inflow[i] < partner.inflow[i]:
-                chosen = partner.dna
+                chosen = partner._dna
             else:
-                chosen = self.dna if rand.random() < 0.5 else partner.dna
+                chosen = self._dna if rand.random() < 0.5 else partner._dna
             
             #row assignment (outflow)
-            RowAssigned[i] = True
-            for j in range(1, len(self.dna)):
-                if ColAssigned[j]:
-                    new_dna[i][j] = (new_dna[i][j] + chosen[i][j]) // 2
-                else:
-                    new_dna[i][j] = chosen[i][j]
-            #col assigment (inflow)
-            ColAssigned[i] = True
-            for j in range(len(self.dna) - 1):
-                if j == 0 or not RowAssigned[j]:
-                    new_dna[j][i] = chosen[j][i]
-                else:
-                    new_dna[j][i] = (new_dna[j][i] + chosen[j][i]) // 2
+            row_assigned[i] = True
+            new_dna[i, ~col_assigned] = chosen[i, ~col_assigned]
+            new_dna[i, col_assigned] = round((new_dna[i, col_assigned] + chosen[i, col_assigned]) // 2)
+            # for j in range(1, len(self._dna)):
+            #     if col_assigned[j]:
+            #         new_dna[i][j] = (new_dna[i][j] + chosen[i][j]) // 2
+            #     else:
+            #         new_dna[i][j] = chosen[i][j]
+
+            # col assigment (inflow)
+            col_assigned[i] = True
+            new_dna[:, ~row_assigned] = chosen[:, ~row_assigned]
+            new_dna[:, row_assigned] = round((new_dna[:, row_assigned] + chosen[:, row_assigned]) // 2)
+            # for j in range(len(self._dna) - 1):
+            #     if j == 0 or not row_assigned[j]:
+            #         new_dna[j][i] = chosen[j][i]
+            #     else:
+            #         new_dna[j][i] = (new_dna[j][i] + chosen[j][i]) // 2
         child = Individual()
         child.dna = new_dna
         return child
@@ -287,13 +387,10 @@ class Individual():
 
         partner: an Individual to perform crossover with
         """
-        new_dna: list[list[int]] = []
-        vertices_from_self: int = rand.randint(0, len(self.dna) - 2)
-        for i, row in enumerate(self.dna):
-            if i <= vertices_from_self:
-                new_dna.append(row)
-            else:
-                new_dna.append(partner.dna[i])
+        new_dna = np.array(self._dna)
+        vertices_from_self = rand.randint(0, len(self.dna) - 2)
+
+        new_dna[vertices_from_self + 1:] = partner.dna[vertices_from_self + 1:]
 
         child = Individual()
         child.dna = new_dna
@@ -307,18 +404,18 @@ class Individual():
 
         partner: an Individual to perform crossover with
         """
-        new_dna: list[list[int]] = []
-        endpoints: list[int] = rand.sample(range(len(self.dna) - 1), k=2)
-        for i, row in enumerate(self.dna):
-            if endpoints[0] <= i and i <= endpoints[1]:
-                new_dna.append(row)
-            else:
-                new_dna.append(partner.dna[i])
+        new_dna = np.zeros(self._dna.shape, dtype=self._dna.dtype)
+        endpoints = rand.sample(range(len(self.dna) - 1), k=2)
+        if endpoints[0] > endpoints[1]: endpoints[::-1]
+
+        new_dna[endpoints[0]:endpoints[1] + 1] += self._dna[endpoints[0]:endpoints[1] + 1]
+        new_dna[:endpoints[0]] += partner._dna[:endpoints[0]]
+        new_dna[endpoints[1] + 1:] += partner._dna[endpoints[1] + 1:]
+
         child = Individual()
         child.dna = new_dna
         return child
+    
+    
     def __str__(self) -> str:
-        result: str = ""
-        for row in self.dna:
-            result += str(row) + "\n"
-        return result
+        return str(self._dna)
