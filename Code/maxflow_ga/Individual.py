@@ -337,9 +337,9 @@ class Individual():
         between the old and new flow.
         partner: an Individual to perform crossover with
         """
-        new_dna = np.zeros(self._dna.shape)
-        row_assigned = np.zeros(self._dna.shape, dtype=bool)
-        col_assigned = np.zeros(self._dna.shape, dtype=bool)
+        new_dna = np.zeros(self._dna.shape, dtype=self._dna.dtype)
+        row_assigned = np.zeros(self._dna.shape[0], dtype=bool)
+        col_assigned = np.zeros(self._dna.shape[0], dtype=bool)
         
         for i in range(1, len(self._dna) - 1):
             # note: order in which these conditions are checked MATTERS!!!
@@ -358,7 +358,9 @@ class Individual():
             #row assignment (outflow)
             row_assigned[i] = True
             new_dna[i, ~col_assigned] = chosen[i, ~col_assigned]
-            new_dna[i, col_assigned] = round((new_dna[i, col_assigned] + chosen[i, col_assigned]) // 2)
+            new_dna[i, col_assigned] = np.rint(
+                (new_dna[i, col_assigned] + chosen[i, col_assigned]) / 2,
+            ).astype(new_dna.dtype)
             # for j in range(1, len(self._dna)):
             #     if col_assigned[j]:
             #         new_dna[i][j] = (new_dna[i][j] + chosen[i][j]) // 2
@@ -368,7 +370,9 @@ class Individual():
             # col assigment (inflow)
             col_assigned[i] = True
             new_dna[:, ~row_assigned] = chosen[:, ~row_assigned]
-            new_dna[:, row_assigned] = round((new_dna[:, row_assigned] + chosen[:, row_assigned]) // 2)
+            new_dna[:, row_assigned] = np.rint(
+                (new_dna[:, row_assigned] + chosen[:, row_assigned]) / 2,
+            ).astype(new_dna.dtype)
             # for j in range(len(self._dna) - 1):
             #     if j == 0 or not row_assigned[j]:
             #         new_dna[j][i] = chosen[j][i]
