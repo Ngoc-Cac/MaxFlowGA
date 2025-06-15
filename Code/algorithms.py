@@ -1,36 +1,9 @@
-from typing import Callable, Literal, Any
-from Individual import Individual
+from maxflow_ga.Individual import Individual
 import random as rand, networkx as nx, math, copy as cp
 
+from typing import Callable, Literal, Any
 #Utility functions
 #Functions for 2d matrix manipulation
-def fuss(population: list[Individual]) -> Individual:
-    """
-    Fitness Uniform Selection Scheme\n\n
-    
-    This selection scheme starts by randomly selecting a value between f_min and f_max,\
-    with f_min and f_max being the smallest and largest fitness value in a population.\
-    The scheme then selects the individual with the fitness score closest to the random\
-    number chosen beforehand.\n
-
-    population: a list of Individuals to choose from
-    """
-    f_min = min(population, key=lambda ind: ind.fitness_score).fitness_score
-    f_max = max(population, key=lambda ind: ind.fitness_score).fitness_score
-    ran_f = rand.uniform(f_min, f_max)
-    distance = math.inf
-    for ind in population:
-        if distance > (temp := abs(ind.fitness_score - ran_f)):
-            distance = temp
-            chosen = ind
-    return chosen
-def fitness_proportionate(population: list[Individual]) -> Individual:
-    """Select a random Individual from a pool of Individuals using their fitness as weights\n\n
-
-    population: a list of Individuals to choose from
-    """
-    return rand.choices(population, [0 if ind.fitness_score < 0 else ind.fitness_score
-                                     for ind in population], k=1)[0]
 def col_sum(twoDmatrix: list[list[int]], column: int) -> int:
     """Find the sum of numbers along a column in a two-D matrix\n\n
 
@@ -133,9 +106,10 @@ def draw_digraph(graph: nx.DiGraph, nodes_pos: dict[any: tuple[int, int]],
 #Genetic Algorithm
 MY_SELECTION_METHODS: dict[str, Callable[[list[Individual]], Individual]] = {'fps': fitness_proportionate,
                                                                              'fuss': fuss}
-def max_flow_GA(capacity_matrix: list[list[int]], crossover_func: int = 1, *,
+def max_flow_GA(capacity_matrix: list[list[int]],
+                crossover_func: Literal[1, 2, 3] = 1, *,
                 pop_size: int = 500, mutation_rate: float = 0.05,
-                max_iter: int = 200, best_max_iter: int | None = 10,
+                max_iter: int = 200, best_max_iter: int | None = None,
                 selection_method: Literal['fps', 'fuss'] = 'fps',
                 update_best_procedure: Callable[[int, Individual], Any] | None = None,
                 update_pop_procedure: Callable[[int, list[Individual]], Any] | None = None)\
