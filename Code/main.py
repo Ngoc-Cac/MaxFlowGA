@@ -489,7 +489,7 @@ def RunGenAlg(master: tk.Tk | tk.Frame) -> None:
     edges = alg.generate_edges(graph)
     weights = alg.give_edge_weights(edges, result['best_of_all_gen'].dna)
     draw_graph(master, nx.DiGraph(graph), main_nodes_pos, edges, weights, f1_best_gen_graph, canvas=best_graph_canvas)
-    best_info.config(text = f"""Balanced: {bool(sum(result['best_of_all_gen'].CheckBalanced()))}
+    best_info.config(text = f"""Balanced: {bool(sum(result['best_of_all_gen'].check_balanced()))}
 Fitness score: {result['best_of_all_gen'].fitness_score: .4f}
 Max Flow: {alg.col_sum(result['best_of_all_gen'].dna, -1)}
 Generation: {result['gen_of_best_ind']}
@@ -497,7 +497,7 @@ Total Generation Ran: {result['total_gen']}""")
     
     enablef1butts()
 def update_procedure(iter: int, best_individual: alg.Individual, *, master: tk.Tk) -> None:
-    isbalanced = (sum((temp := best_individual.CheckBalanced())) == len(temp))
+    isbalanced = (sum((temp := best_individual.check_balanced())) == len(temp))
     best_info.config(text=f"""Balanced: {isbalanced}
 Fitness score: {best_individual.fitness_score: .4f}
 Max Flow: {alg.col_sum(best_individual.dna, -1)}
