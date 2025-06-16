@@ -5,7 +5,6 @@ from maxflow_ga import _np_rng
 
 
 from numpy.typing import NDArray
-from typing import Literal
 
 
 def random_flow(capacity_matrix: NDArray) -> NDArray:
@@ -50,8 +49,7 @@ class Individual():
             This is `None` by default. In such case, The DNA is not initialized.
         """
         if not capacity_matrix is None:
-            self._dna = random_flow(capacity_matrix)
-            self._update_flowrate()
+            self.dna = random_flow(capacity_matrix)
     
     # getter and setter for dna attribute
     # note, every time a new dna is assigned, we must update the flowrate
@@ -249,7 +247,9 @@ class Individual():
             `i` is `True` iff the `i`th vertex is balance.
         :rtype: NDArray
         """
-        return self.inflow == self.outflow
+        bal_mat = self.inflow == self.outflow
+        bal_mat[[0, -1]] = True
+        return bal_mat
     
     def fitness(self, maximal_capacity: int):
         """
@@ -270,27 +270,6 @@ class Individual():
                 - excess_flow / total_flow
                 + min(self.inflow[-1], self.outflow[0]) / maximal_capacity
             )
-
-    def crossover(self,
-        partner: 'Individual',
-        function_index: Literal[1, 2, 3] = 1
-    ) -> 'Individual':
-        """
-        Apply crossover between this object and another Individual.
-        See each respective crossover function for more details.
-
-        :param Individual partner: An Individual to perform crossover with.
-        :param Literal[1, 2, 3] function_index: The crossover function to use,
-            should be a number between 1 and 3. By default, use crossover function 1.
-        """
-        if function_index == 1:
-            return self.c1(partner)
-        elif function_index == 2:
-            return self.c2(partner)
-        elif function_index == 3:
-            return self.c3(partner)
-        else:
-            raise ValueError(f"There are only 3 crossover function! {function_index=} was passed")
         
     def mutate(self,
         capacity_matrix: NDArray,
@@ -322,7 +301,9 @@ class Individual():
         
         self._update_flowrate()
     
-    def c1(self, partner: 'Individual') -> 'Individual':
+    def flow_conservation_crossover(self,
+        partner: 'Individual'
+    ) -> NDArray:
         """Perform crossover on two individuals
         When doing crossover, we go through each vertices and decide whether we would take the partner's vertex
         instead. Decision is based on the balance of that vertex as well as its flow.
@@ -358,30 +339,17 @@ class Individual():
             #row assignment (outflow)
             row_assigned[i] = True
             new_dna[i, ~col_assigned] = chosen[i, ~col_assigned]
-            new_dna[i, col_assigned] = np.rint(
-                (new_dna[i, col_assigned] + chosen[i, col_assigned]) / 2,
-            ).astype(new_dna.dtype)
-            # for j in range(1, len(self._dna)):
-            #     if col_assigned[j]:
-            #         new_dna[i][j] = (new_dna[i][j] + chosen[i][j]) // 2
-            #     else:
-            #         new_dna[i][j] = chosen[i][j]
+            new_dna[i, col_assigned] = (new_dna[i, col_assigned] + chosen[i, col_assigned]) // 2
 
             # col assigment (inflow)
             col_assigned[i] = True
-            new_dna[:, ~row_assigned] = chosen[:, ~row_assigned]
-            new_dna[:, row_assigned] = np.rint(
-                (new_dna[:, row_assigned] + chosen[:, row_assigned]) / 2,
-            ).astype(new_dna.dtype)
-            # for j in range(len(self._dna) - 1):
-            #     if j == 0 or not row_assigned[j]:
-            #         new_dna[j][i] = chosen[j][i]
-            #     else:
-            #         new_dna[j][i] = (new_dna[j][i] + chosen[j][i]) // 2
-        child = Individual()
-        child.dna = new_dna
-        return child
-    def c2(self, partner: 'Individual') -> 'Individual':
+            new_dna[~row_assigned, i] = chosen[~row_assigned, i]
+            new_dna[row_assigned, i] = (new_dna[row_assigned, i] + chosen[row_assigned, i]) // 2
+        return new_dna
+    
+    def one_point_crossover(self,
+        partner: 'Individual'
+    ) -> NDArray:
         """
         Perform one-point crossover.
         Start by choosing a random vertex i (excluding the sink vertex). Then, child inherits every vertices
@@ -395,10 +363,11 @@ class Individual():
 
         new_dna[vertices_from_self + 1:] = partner.dna[vertices_from_self + 1:]
 
-        child = Individual()
-        child.dna = new_dna
-        return child
-    def c3(self, partner: 'Individual') -> 'Individual':
+        return new_dna
+    
+    def two_point_crossover(self,
+        partner: 'Individual'
+    ) -> NDArray:
         """
         Perform two-point crossover.
         Start by choosing two random vertex i and j. Then, child inherits every vertices and outflowing edges
@@ -415,10 +384,11 @@ class Individual():
         new_dna[:endpoints[0]] += partner._dna[:endpoints[0]]
         new_dna[endpoints[1] + 1:] += partner._dna[endpoints[1] + 1:]
 
-        child = Individual()
-        child.dna = new_dna
-        return child
+        return new_dna
     
-    
-    def __str__(self) -> str:
-        return str(self._dna)
+    def __repr__(self) -> str:
+        return f"""  Fitness: {self.fitness_score}
+  Balanced vertices: {self.check_balanced().sum()}/{self._dna.shape[0]}
+  Maximum flow: {self._dna[:, -1].sum()}
+  Flow matrix:
+{self._dna}"""
