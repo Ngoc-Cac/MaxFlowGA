@@ -21,6 +21,7 @@ class GA_Solver:
     __slots__ = (
         '_cap_mat',
         '_crossover_type',
+        '_maximal_cap',
         '_mut_rate',
         '_pop_size',
         '_selection_scheme',
@@ -63,6 +64,7 @@ class GA_Solver:
         elif np.any(new_mat < 0):
             raise ValueError('Negative values found in capacity matrix')
         self._cap_mat = np.array(new_mat, dtype=np.int64)
+        self._maximal_cap = min(self._cap_mat[0].sum(), self._cap_mat[:, -1].sum())
     
     @property
     def crossover_type(self
@@ -147,45 +149,54 @@ class GA_Solver:
         child = Individual()
         child.dna = new_dna
         child.mutate(self._cap_mat, self._mut_rate)
+        child.fitness(self._maximal_cap)
 
         return child
     
     def optimize(self,
         max_iter: int,
-        best_max_iter: int = 0
+        best_max_iter: int = 0,
+        verbose: bool = False
     ):
         if best_max_iter <= 0:
             best_max_iter = max_iter
 
-        maximal_capacity = min(self._cap_mat[0].sum(), self._cap_mat[:, -1].sum())
         new_pop = [Individual(self._cap_mat) for _ in range(self._pop_size)]
+        for ind in new_pop: ind.fitness(self._maximal_cap)
         best_ind = new_pop[0]
-        iter = -1
         best_iter = 0
 
-        while (iter := iter + 1) < max_iter and (best_iter := best_iter + 1) < best_max_iter:
+        iter_bar = range(1, max_iter + 1)
+        if verbose:
+            iter_bar = tqdm(iter_bar, desc='Generation')
+        for iter in iter_bar:
+            if (best_iter := best_iter + 1) > best_max_iter:
+                break
+
             population = new_pop
-            for ind in population:
-                ind.fitness(maximal_capacity)
-                if ind.fitness_score > best_ind.fitness_score:
-                    best_iter = 0
-                    best_ind = ind
-                    best_at_gen = iter
-                    if self._update_procedures['best']:
-                        self._update_procedures['best'](iter, best_ind)
+            candidate = max(population, key=lambda ind: ind.fitness_score)
+            if candidate.fitness_score > best_ind.fitness_score:
+                best_ind = candidate
+                best_iter = 0
+                best_at_gen = iter
+                if verbose:
+                    iter_bar.set_postfix_str(
+                        f"Generation of best Individual: {best_at_gen}"
+                    )
+                if self._update_procedures['best']:
+                    self._update_procedures['best'](iter, best_ind)
+            
             new_pop = [
                 self.perform_crossover(
                     self._select_random(population),
                     self._select_random(population)
-                )
-                for _ in range(self._pop_size)
+                ) for _ in range(self._pop_size)
             ]
             if self._update_procedures['pop']:
                 self._update_procedures['pop'](iter, population)
 
         return {
-            "total_gen": iter + 1,
+            "total_gen": iter,
             "gen_of_best_ind": best_at_gen,
             "best_of_all_gen": best_ind,
-            "best_in_last_gen": max(population, key=lambda x: x.fitness_score)
         }
