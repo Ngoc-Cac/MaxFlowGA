@@ -51,7 +51,7 @@ class Individual():
 
         :param capacity_matrix: The capacity matrix of the network.
             This is `None` by default. In such case, The DNA is not initialized.
-        :type capacity_matrix: NDArray or None
+        :type capacity_matrix: numpy.NDArray or None
         """
         if not capacity_matrix is None:
             self.dna = random_flow(capacity_matrix)
@@ -60,12 +60,20 @@ class Individual():
     # note, every time a new dna is assigned, we must update the flowrate
     @property
     def dna(self) -> NDArray:
+        """
+        A 2D numpy array that is interpeted in the same way as the
+        original network's capacity matrix.
+        """
         if not hasattr(self, "_dna"):
             raise AttributeError("'dna' attribute has not been initialised")
         return np.array(self._dna)
     @dna.setter
     def dna(self, new_dna: NDArray):
-        self._dna = np.array(new_dna)
+        if not np.can_cast(new_dna, np.int64, 'same_kind'):
+            raise TypeError(f'Expected numpy.NDArray of type integers, got {new_dna.dtype}')
+        elif np.any(new_dna < 0):
+            raise ValueError('Negative values found in dna')
+        self._dna = np.array(new_dna, dtype=np.uint64)
         self._update_flowrate()
 
     
@@ -321,7 +329,7 @@ class Individual():
             decrement an inflowing edge.
         4. Repeat step 2 with the next vertex.
 
-        :param NDArray capacity_matrix: The capacity matrix of the network.
+        :param numpy.NDArray capacity_matrix: The capacity matrix of the network.
         :param float mutation_rate: A float representing the rate of mutation. Must be between 0 and 1
         """
         proba = _np_rng.random(self._dna.shape[0])
