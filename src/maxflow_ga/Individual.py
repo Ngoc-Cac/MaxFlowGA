@@ -345,19 +345,24 @@ class Individual():
     def flow_conservation_crossover(self,
         partner: 'Individual'
     ) -> NDArray:
-        """Perform crossover on two individuals
-        When doing crossover, we go through each vertices and decide whether we would take the partner's vertex
-        instead. Decision is based on the balance of that vertex as well as its flow.
-        When choosing between two vertices, we prioritise taking the more balanced vertex, that is the vertex
-        with less excess flow (excess flow is difference between inflow and outflow).
-        In the case where both vertices have the same balance, we prioritise taking the vertex with higher flow.
-        This comparision can be done on either the inflow or the outflow. This implementation chooses to use the
-        inflow for comparision.
+        """
+        Perform crossover on two individuals with flow conservation as first priority.
+        This returns a new dna after crossover.
 
-        When a vertex is chosen to be encoded to the child, every edges that connects the vertex is written into
-        the child's DNA. In the case where the edge has already been written to beforehand. We take the average
-        between the old and new flow.
-        partner: an Individual to perform crossover with
+        The crossover goes as follows:
+        1. Start from vertex at index 1.
+        2. Decide whether to take all information of this vertex from
+            this Individual or the partner. This is based on the excess flow of
+            either partners. The partner with less excess flow are prioritized.
+            If either partner have the same excess flow, either are chosen randomly.
+        3. Assigned all incoming and outcoming edges from the chosen vertex to the
+            child's dna. If one of the edge position has been assigned to beforehand,
+            we take the arithmetic average between the current value and the value to
+            be assigned.
+
+        :param Individual partner: An Individual to perform crossover with.
+        :return: A new dna. This can be assigned to the child's dna.
+        :rtype: numpy.NDArray
         """
         new_dna = np.zeros(self._dna.shape, dtype=self._dna.dtype)
         row_assigned = np.zeros(self._dna.shape[0], dtype=bool)
@@ -392,12 +397,16 @@ class Individual():
         partner: 'Individual'
     ) -> NDArray:
         """
-        Perform one-point crossover.
-        Start by choosing a random vertex i (excluding the sink vertex). Then, child inherits every vertices
-        and outflowing edges starting from the 0th to the ith vertex from this instance. For every other
-        outflowing edges and vertices from (i+1)th to the sink vertex, child inherits from the partner Individual.
+        Perform one-point crossover. The method goes as follows:
+        1. Start by choosing a random vertex i (excluding the sink vertex).
+        2. Assign outflow of all vertices from the 0th to the ith vertex
+            from this Individual.
+        3. Assign outlfow of vertices from (i+1)th to the sink vertex from
+            the partner.
 
-        partner: an Individual to perform crossover with
+        :param Individual partner: An Individual to perform crossover with.
+        :return: A new dna. This can be assigned to the child's dna.
+        :rtype: numpy.NDArray
         """
         new_dna = np.array(self._dna)
         vertices_from_self = rand.randint(0, len(self.dna) - 2)
@@ -410,12 +419,15 @@ class Individual():
         partner: 'Individual'
     ) -> NDArray:
         """
-        Perform two-point crossover.
-        Start by choosing two random vertex i and j. Then, child inherits every vertices and outflowing edges
-        starting from the ith to the jth vertex from this instance. For every other outflowing edges and vertices
-        from 0th to (i-1)th and the (j+1)th to the sink vertex, child inherits from the partner Individual.
+        Perform two-point crossover. This goes as follows:
+        1. Start by choosing two random vertex i and j.
+        2. Assign all outflow from the ith to the jth vertex from this Individual.
+        3. Assign all outflow from 0th to (i-1)th and the (j+1)th to the sink vertex
+            from the partner.
 
-        partner: an Individual to perform crossover with
+        :param Individual partner: An Individual to perform crossover with.
+        :return: A new dna. This can be assigned to the child's dna.
+        :rtype: numpy.NDArray
         """
         new_dna = np.zeros(self._dna.shape, dtype=self._dna.dtype)
         endpoints = rand.sample(range(len(self.dna) - 1), k=2)
