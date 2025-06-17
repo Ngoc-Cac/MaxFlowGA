@@ -23,15 +23,19 @@ def random_flow(capacity_matrix: NDArray) -> NDArray:
 
 class Individual():
     """
-    ## Network Flow - Max Flow Optimisation
-    An individual is a feasible solution of the problem. It's DNA is defined
-    to be a network that has been filled in.
+    An individual is a feasible solution of the max flow problem.
+    Its DNA is defined to be a network that has been filled in.
 
-    Internally, the DNA is 2D-square matrix, similar to the capacity matrix.
-    Each element shows the flow of a solution. Each element must be between
-    0 and its flow capacity.
+    :param dna: The dna of the Individual. Internally, the DNA is
+        a 2D-square matrix, similar to the capacity matrix.
+        Each element shows the flow of a solution, an integer between
+        0 and the corresponding flow capacity.
+    :type dna: numpy.NDArray
+
+    :param fitness_score: The fitness score of the Individual.
+    :type fitness_score: float
     """
-    __slots__ = "_dna", "inflow", "outflow", "fitness_score"
+    __slots__ = "_dna", "_inflow", "_outflow", "fitness_score"
     def __init__(self, capacity_matrix: NDArray | None = None):
         r"""
         When creating an individual, a capacity matrix is needed to
@@ -45,8 +49,9 @@ class Individual():
         For example, if the element at index `(0, 1)` has a value of `10`,
         that means the flow from the 0th vertex to the 1st vertex is `10`.
 
-        :param NDArray | None capacity_matrix: The capacity matrix of the network.
+        :param capacity_matrix: The capacity matrix of the network.
             This is `None` by default. In such case, The DNA is not initialized.
+        :type capacity_matrix: NDArray or None
         """
         if not capacity_matrix is None:
             self.dna = random_flow(capacity_matrix)
@@ -71,22 +76,38 @@ class Individual():
         In simple words, inflow implies the incoming flow to a vertex.
         Similarly, outflow implies the outcoming flow at a vertex.
 
-        For example: Consider the given solution to a graph containing 4 nodes
+        ## Examples and code
+        Consider the given solution to a graph containing 4 nodes
         ```
            [[0, 1, 0, 2],
             [0, 0, 2, 0],
             [0, 3, 0, 4],
             [0, 0, 0, 0]]
         ```
+        The inflow is the sum of values along each column. For example, the inflow
+        of the 1st vertext (column at index 1) is 4.
+
+        Similarly, the outflow is the sum of values along each row. For example,
+        the outflow of the first vertex (row at index 1) is 2.
+        ```
+        >>> from maxflow_ga.Individual import Individual
+        >>> ind = Individual()
+        >>> ind._dna = np.array([[0, 1, 0, 2], [0, 0, 2, 0], [0, 3, 0, 4], [0, 0, 0, 0]])
+        >>> ind._update_flowrate()
+        >>> ind._inflow
+        array([0, 4, 2, 6])
+        >>> ind._outflow
+        array([3, 2, 7, 0])
+        ```
         """
-        self.inflow = self._dna.sum(axis=0)
-        self.outflow = self._dna.sum(axis=1)
+        self._inflow = self._dna.sum(axis=0)
+        self._outflow = self._dna.sum(axis=1)
 
     def _overflow_mutation(self,
         capacity_matrix: NDArray,
         mutable: NDArray
     ):
-        overflow = (self.inflow > self.outflow)
+        overflow = (self._inflow > self._outflow)
         mutable_vertices = np.argwhere(overflow & mutable)[:, 0]
 
 
@@ -138,7 +159,7 @@ class Individual():
         capacity_matrix: NDArray,
         mutable: NDArray
     ):
-        underflow = (self.inflow < self.outflow)
+        underflow = (self._inflow < self._outflow)
         mutable_vertices = np.argwhere(underflow & mutable)[:, 0]
 
         # slight opposite to the method above
@@ -188,7 +209,7 @@ class Individual():
         capacity_matrix: NDArray,
         mutable: NDArray
     ):
-        balanced = (self.inflow == self.outflow) & mutable
+        balanced = (self._inflow == self._outflow) & mutable
         mutable_vertices = np.argwhere(balanced & mutable)[:, 0]
 
         # go over every row and col (outflow and inflow)
@@ -237,38 +258,50 @@ class Individual():
 
     def check_balanced(self) -> NDArray:
         """
-        Check the balance of graph's vertices
+        Check the balance of solution's vertices.
 
         A vertex is said to be balance if its inflow is equal to its outflow.
-        Inflow implies the incoming flow to a vertex. Outflow implies the outcoming
-        flow at a vertex.
+
+        ## Examples
+        Consider the given solution to a graph containing 4 nodes
+        ```
+           [[0, 1, 0, 2],
+            [0, 0, 2, 0],
+            [0, 1, 0, 4],
+            [0, 0, 0, 0]]
+        ```
+        The 1st vertex has outflow (row index 1) of 2 and inflow (column index 1)
+        of 2. Thus, this is a balance vertex.
+
+        Whereas, the 2nd vertex has outflow of 5 and inflow of 2. This is not a
+        balanced vertex.
 
         :return: A numpy array of bool where the element at index
             `i` is `True` iff the `i`th vertex is balance.
         :rtype: NDArray
         """
-        bal_mat = self.inflow == self.outflow
+        bal_mat = self._inflow == self._outflow
         bal_mat[[0, -1]] = True
         return bal_mat
     
     def fitness(self, maximal_capacity: int):
         """
-        Calculate the fitness of an individual
+        Calculate the fitness of an individual.
         
         :param int maximal_capacity: A value shows the maximal flow
             of given graph assuming that all intermediate edges'
             capacity allows for such flow.
         """
         balance_matrix = self.check_balanced()
-        excess_flow = abs(self.inflow[1:-1] - self.outflow[1:-1]).sum()
-        total_flow = self.outflow.sum()
+        excess_flow = abs(self._inflow[1:-1] - self._outflow[1:-1]).sum()
+        total_flow = self._outflow.sum()
         if total_flow == 0:
             self.fitness_score = 0
         else:
             self.fitness_score = (
                 balance_matrix.sum() / balance_matrix.shape[0]
                 - excess_flow / total_flow
-                + min(self.inflow[-1], self.outflow[0]) / maximal_capacity
+                + min(self._inflow[-1], self._outflow[0]) / maximal_capacity
             )
         
     def mutate(self,
@@ -325,13 +358,13 @@ class Individual():
         for i in range(1, len(self._dna) - 1):
             # note: order in which these conditions are checked MATTERS!!!
             # DO NOT TRY TO REFACTOR THIS CONDITION CHECKING!!!
-            if (exA := abs(self.inflow[i] - self.outflow[i])) < (exB := abs(partner.inflow[i] - partner.outflow[i])):
+            if (exA := abs(self._inflow[i] - self._outflow[i])) < (exB := abs(partner._inflow[i] - partner._outflow[i])):
                 chosen = self._dna
             elif exA > exB:
                 chosen = partner._dna
-            elif self.inflow[i] > partner.inflow[i]:
+            elif self._inflow[i] > partner._inflow[i]:
                 chosen = self._dna
-            elif self.inflow[i] < partner.inflow[i]:
+            elif self._inflow[i] < partner._inflow[i]:
                 chosen = partner._dna
             else:
                 chosen = self._dna if rand.random() < 0.5 else partner._dna
